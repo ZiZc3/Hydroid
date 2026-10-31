@@ -1,0 +1,13 @@
+{
+    "name": "Crossy Road",
+    "package": "com.yodo1.crossyroad",
+    "titleId": "PPSA26372",
+    "label": "CROSSYROAD000001",
+    "testedVersion": "7.14.0",
+    "engine": {
+        "fastJit": true,
+        "etcNative": true,
+        "parallelWarm": true,
+        "controller": "the game's own (InControl)"
+    }
+}
