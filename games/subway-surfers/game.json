@@ -7,6 +7,8 @@
     "engine": {
         "fastJit": true,
         "phoneView": true,
-        "etcNative": true
+        "etcNative": true,
+        "parallelWarm": true,
+        "controller": "the game's own"
     }
 }

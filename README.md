@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-PS5-2ea043" alt="platform">
-  <img src="https://img.shields.io/badge/games-1-2ea043" alt="games">
+  <img src="https://img.shields.io/badge/games-2-2ea043" alt="games">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2ea043" alt="license">
 </p>
 
@@ -27,16 +27,17 @@ Powered by Hydroid.
 
 ## Games
 
-| Game | App | Version tested | State |
-|---|---|---|---|
-| Subway Surfers | PPSA26370 | 3.70.3 | In testing |
+| | Game | App | Version tested | State |
+|:---:|---|---|---|---|
+| <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **Subway Surfers** | PPSA26370 | 3.70.3 | Playable |
+| <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **Geometry Dash Lite** | PPSA26371 | 2.2.148 | In testing |
 
 ## Installing
 
 1. Download the game's app from [Releases](../../releases) and unzip it.
 2. Copy its folder to the PS5 and install it as a homebrew title (for example with ShadowMountPlus):
    `/data/homebrew/<app>`
-3. Put your own copy of the game (`.apk`, `.xapk` or `.apks`) in the app's `game` folder over FTP:
+3. Put your own copy of the game (`.apk`, `.xapk`, `.apks` or `.apkm`) in the app's `game` folder over FTP:
    `/data/homebrew/<app>/game`
 4. Start the app from the home screen.
 

@@ -1,0 +1,13 @@
+{
+    "name": "Geometry Dash Lite",
+    "package": "com.robtopx.geometryjumplite",
+    "titleId": "PPSA26371",
+    "label": "GEOMETRYDASHLITE",
+    "testedVersion": "2.2.148",
+    "engine": {
+        "fastJit": true,
+        "parallelWarm": true,
+        "renderer": "ANGLE",
+        "controller": "the game's own (its PC controller mode)"
+    }
+}
