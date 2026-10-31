@@ -5,8 +5,7 @@
 <h1 align="center">PS5 Android Collection</h1>
 
 <p align="center">
-  <b>Android games as their own PS5 apps.</b><br>
-  One game, one app on the home screen. Press it and the game starts.
+  <b>Android games on PS5.</b><br>
 </p>
 
 <p align="center">
