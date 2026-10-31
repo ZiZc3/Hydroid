@@ -42,12 +42,6 @@ Powered by Hydroid.
 
 The apps don't include the games. Use your own copy, in the version tested.
 
-## In a game
-
-| Button | What it does |
-|---|---|
-| Options (hold) | Quick menu: resume, stats overlay, keymap editor, close game |
-
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE).

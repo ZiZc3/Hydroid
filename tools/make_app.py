@@ -43,7 +43,7 @@ def background(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("game", help="the game's folder, e.g. games/subway-surfers")
-    ap.add_argument("--engine", required=True, help="Hydroid's built title folder (dist/PPSA26369)")
+    ap.add_argument("--engine", required=True, help="the engine's built title folder")
     ap.add_argument("--out", default="dist")
     a = ap.parse_args()
     with open(os.path.join(a.game, "game.json")) as f:
