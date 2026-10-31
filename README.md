@@ -30,7 +30,7 @@ Powered by Hydroid.
 | | Game | App | Version tested | State |
 |:---:|---|---|---|---|
 | <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **Subway Surfers** | PPSA26370 | 3.70.3 | Playable |
-| <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **Geometry Dash Lite** | PPSA26371 | 2.2.148 | In testing |
+| <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **Geometry Dash Lite** | PPSA26371 | 2.2.148 | Playable |
 
 ## Installing
 
