@@ -37,11 +37,30 @@ tested with. A change made for one game can't break another.
 ## Installing
 
 1. Install the game's app folder as a homebrew title (for example with ShadowMountPlus).
-2. Put your own copy of the game (`.apk`, `.xapk` or `.apks`) in the app's `games` folder over FTP:
-   `/data/homebrew/<title id>/games`
+2. Put your own copy of the game (`.apk`, `.xapk` or `.apks`) in the app's `game` folder over FTP:
+   `/data/homebrew/<title id>/game`
 3. Start the app from the home screen.
 
 The apps don't include the games. Use your own copy.
+
+## Making an app
+
+Each game has a folder in [`games`](games):
+
+| File | What it is |
+|---|---|
+| `game.json` | the name, the Android package, the PS5 title id and the version tested |
+| `icon0.png` | the home screen icon (512x512) |
+| `background.png` | the home screen background (cut to 16:9) |
+
+Build the app from the Hydroid engine's title folder:
+
+```
+pip install pillow etcpak
+python tools/make_app.py games/subway-surfers --engine <path to Hydroid's dist/PPSA26369>
+```
+
+The app is written to `dist/<title id>`.
 
 ## In a game
 
