@@ -50,11 +50,11 @@ the buttons are set up for its touch controls.
 
 The apps don't include the games. use the tested versions for best compatibility.
 
-## Built on
+## Built on 
 
 [dynarmic](https://github.com/lioncash/dynarmic) (ARM JIT) ·
 [FalsoJNI](https://github.com/v-atamanenko/FalsoJNI) (JNI) ·
-Mesa (OpenGL, RADV Vulkan) ·
+Mesa ([OpenGL](https://github.com/darkxex/ps5-opengl), [RADV Vulkan](https://github.com/mihawk-99/PS5_Vulkan)) ·
 [astc-encoder](https://github.com/ARM-software/astc-encoder) ·
 [stb](https://github.com/nothings/stb).
 
