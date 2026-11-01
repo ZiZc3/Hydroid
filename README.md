@@ -36,24 +36,6 @@ Powered by Hydroid.
 
 Every game uses its own controller support, set up for the DualSense.
 
-## Controls
-
-**Subway Surfers, Geometry Dash Lite, Crossy Road:** the game's own controller controls.
-
-**Vector:**
-
-| Button | Action |
-|---|---|
-| ✕ / D-pad up / left stick up | Jump, confirm |
-| D-pad down / left stick down | Slide |
-| D-pad / left stick left, right | Left, right |
-| □ / R1 | Trick |
-| ○ | Back |
-| Options | Pause |
-| △ | Restart |
-| L1 | Checkpoint |
-| Right stick + touchpad click | Cursor and tap |
-
 ## Installing
 
 1. Download the game's app from [Releases](../../releases) and unzip it.
