@@ -1,0 +1,10 @@
+{
+    "name": "Shadow Fight 2",
+    "package": "com.nekki.shadowfight",
+    "titleId": "PPSA26377",
+    "label": "SHADOWFIGHT20001",
+    "testedVersion": "2.46.0",
+    "engine": {
+        "controller": "its own controller mode where it works, plus a button layout for the fight buttons (shipped touchmap.txt); the right stick moves the cursor"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "name": "Jetpack Joyride",
+    "package": "com.halfbrick.jetpackjoyride",
+    "titleId": "PPSA26378",
+    "label": "JETPACKJOYRIDE01",
+    "testedVersion": "1.104.1",
+    "engine": {
+        "controller": "Cross / R2 tap at the cursor, Circle / Options back; the right stick moves the cursor"
+    }
+}

@@ -1,0 +1,10 @@
+{
+    "name": "Fruit Ninja",
+    "package": "com.halfbrick.fruitninjafree",
+    "titleId": "PPSA26380",
+    "label": "FRUITNINJA000001",
+    "testedVersion": "2.8.9",
+    "engine": {
+        "controller": "hold Cross / R2 and move the right stick to slice; Circle / Options back"
+    }
+}

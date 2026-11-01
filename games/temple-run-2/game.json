@@ -1,0 +1,11 @@
+{
+    "name": "Temple Run 2",
+    "package": "com.imangi.templerun2",
+    "titleId": "PPSA26379",
+    "label": "TEMPLERUN2000001",
+    "testedVersion": "1.137.0",
+    "engine": {
+        "motion": true,
+        "controller": "the cursor and the touchpad; DualSense tilt (levelled to how the pad is held)"
+    }
+}
