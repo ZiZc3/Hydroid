@@ -1,0 +1,14 @@
+{
+    "name": "Sonic Dash",
+    "package": "com.sega.sonicdash",
+    "titleId": "PPSA26375",
+    "label": "SONICDASH0000001",
+    "testedVersion": "10.5.1",
+    "engine": {
+        "fastJit": true,
+        "angle": true,
+        "armMemmove": true,
+        "phoneView": true,
+        "controller": "the DualSense as swipes (D-pad, left stick, Cross, Square, L1, R1)"
+    }
+}

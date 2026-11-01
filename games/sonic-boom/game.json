@@ -1,0 +1,15 @@
+{
+    "name": "Sonic Boom",
+    "package": "com.sega.sonicboomandroid",
+    "titleId": "PPSA26376",
+    "label": "SONICBOOM0000001",
+    "testedVersion": "3.26.0",
+    "engine": {
+        "fastJit": true,
+        "angle": true,
+        "armMemmove": true,
+        "phoneView": true,
+        "motion": true,
+        "controller": "the DualSense as swipes (D-pad, left stick, Cross, Square, L1, R1); DualSense tilt for the Enerbeam"
+    }
+}
