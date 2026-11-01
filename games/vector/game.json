@@ -1,0 +1,12 @@
+{
+    "name": "Vector",
+    "package": "com.nekki.vector",
+    "titleId": "PPSA26373",
+    "label": "VECTOR0000000001",
+    "testedVersion": "2.10.2",
+    "engine": {
+        "playGamesPc": true,
+        "directWrites": true,
+        "controller": "the game's own keyboard controls (Google Play Games on PC), on the DualSense"
+    }
+}

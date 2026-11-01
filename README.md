@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/platform-PS5-2ea043" alt="platform">
-  <img src="https://img.shields.io/badge/games-3-2ea043" alt="games">
+  <img src="https://img.shields.io/badge/games-4-2ea043" alt="games">
   <img src="https://img.shields.io/badge/license-GPL--3.0-2ea043" alt="license">
 </p>
 
@@ -32,6 +32,27 @@ Powered by Hydroid.
 | <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **Subway Surfers** | PPSA26370 | 3.70.3 | Playable |
 | <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **Geometry Dash Lite** | PPSA26371 | 2.2.148 | Playable |
 | <img src="games/crossy-road/icon0.png" width="64" alt="Crossy Road"> | **Crossy Road** | PPSA26372 | 7.14.0 | Playable (stutters in menus) |
+| <img src="games/vector/icon0.png" width="64" alt="Vector"> | **Vector** | PPSA26373 | 2.10.2 | Playable (the first start needs internet) |
+
+Every game uses its own controller support, set up for the DualSense.
+
+## Controls
+
+**Subway Surfers, Geometry Dash Lite, Crossy Road:** the game's own controller controls.
+
+**Vector:**
+
+| Button | Action |
+|---|---|
+| ✕ / D-pad up / left stick up | Jump, confirm |
+| D-pad down / left stick down | Slide |
+| D-pad / left stick left, right | Left, right |
+| □ / R1 | Trick |
+| ○ | Back |
+| Options | Pause |
+| △ | Restart |
+| L1 | Checkpoint |
+| Right stick + touchpad click | Cursor and tap |
 
 ## Installing
 
