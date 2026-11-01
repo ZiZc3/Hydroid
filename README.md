@@ -51,6 +51,11 @@ games work today. Each engine is a small host in `src/`, so developers can add n
 Every game plays with the DualSense: its own controller support where it has one, otherwise
 the buttons are set up for its touch controls.
 
+**Portrait games stay portrait.** Games made for a phone held upright (Sonic Dash, Sonic Boom,
+Temple Run 2) play in a phone-shaped screen in the middle of the TV.
+They can't be made widescreen: the game itself doesn't support it, and forcing it stretches or cuts
+its menus and buttons.
+
 ## Installing
 
 1. Download the game's app from [Releases](../../releases) and unzip it.

@@ -45,6 +45,11 @@ Each list is a `#define ..._GAMES "com.a,com.b"` in the source (a name can be a 
 | `CURSOR_ONLY_GAMES`, `CURSOR_RIGHT_GAMES` | the cursor (right stick, R2 taps) and the touchpad |
 | `MOTION_GAMES`, `TILT_LEVEL_GAMES` (`sensors.c`) | the DualSense's motion as the phone's tilt |
 
+**Portrait games:** a game made only for an upright phone (its manifest's `screenOrientation`
+is portrait) goes in `PHONE_VIEW_GAMES`: it's told it has a 1080x1920 screen and is drawn in the
+middle of the TV. Don't force such a game wide: it has no layout for it, so its menus and
+buttons come out stretched, cut or in black boxes.
+
 The Java answers in `src/java_layer.c` are tables of `{ answer, class, package }`: an answer
 with a package is only for that game.
 
