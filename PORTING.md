@@ -104,7 +104,7 @@ the order the engine's own Java would.
 | Godot | `godot_host.c` |
 | Unreal / GameActivity | `gameactivity_host.c` |
 | NativeActivity | `native_activity.c` |
-| Rockstar (RenderWare, its oswrapper Android ports: GTA San Andreas) | `gtasa_host.c` |
+| Rockstar (RenderWare, its oswrapper Android ports) | `gtasa_host.c` |
 
 A new one is two functions, as the others have:
 
