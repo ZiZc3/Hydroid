@@ -31,15 +31,15 @@ Made for the PS5. The same code can also run on Linux or Windows.
 
 | | Game | App | Version tested | State |
 |:---:|---|---|---|---|
-| <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **Subway Surfers** | PPSA26370 | 3.70.3 | Playable |
-| <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **Geometry Dash Lite** | PPSA26371 | 2.2.148 | Playable |
-| <img src="games/crossy-road/icon0.png" width="64" alt="Crossy Road"> | **Crossy Road** | PPSA26372 | 7.14.0 | Playable (stutters in menus) |
-| <img src="games/sonic-dash/icon0.png" width="64" alt="Sonic Dash"> | **Sonic Dash** | PPSA26375 | 10.5.1 | Playable (stutters a little) |
-| <img src="games/sonic-boom/icon0.png" width="64" alt="Sonic Boom"> | **Sonic Boom** | PPSA26376 | 3.26.0 | Playable |
-| <img src="games/shadow-fight-2/icon0.png" width="64" alt="Shadow Fight 2"> | **Shadow Fight 2** | PPSA26377 | 2.46.0 | Playable |
-| <img src="games/jetpack-joyride/icon0.png" width="64" alt="Jetpack Joyride"> | **Jetpack Joyride** | PPSA26378 | 1.104.1 | Playable |
-| <img src="games/temple-run-2/icon0.png" width="64" alt="Temple Run 2"> | **Temple Run 2** | PPSA26379 | 1.137.0 | Playable |
-| <img src="games/fruit-ninja/icon0.png" width="64" alt="Fruit Ninja"> | **Fruit Ninja** | PPSA26380 | 2.8.9 | Playable (stutters in menus) |
+| <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **[Subway Surfers](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26370.-.Subway.Surfers.zip)** | PPSA26370 | 3.70.3 | Playable |
+| <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **[Geometry Dash Lite](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26371.-.Geometry.Dash.Lite.zip)** | PPSA26371 | 2.2.148 | Playable |
+| <img src="games/crossy-road/icon0.png" width="64" alt="Crossy Road"> | **[Crossy Road](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26372.-.Crossy.Road.zip)** | PPSA26372 | 7.14.0 | Playable (stutters in menus) |
+| <img src="games/sonic-dash/icon0.png" width="64" alt="Sonic Dash"> | **[Sonic Dash](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26375.-.Sonic.Dash.zip)** | PPSA26375 | 10.5.1 | Playable (stutters a little) |
+| <img src="games/sonic-boom/icon0.png" width="64" alt="Sonic Boom"> | **[Sonic Boom](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26376.-.Sonic.Boom.zip)** | PPSA26376 | 3.26.0 | Playable |
+| <img src="games/shadow-fight-2/icon0.png" width="64" alt="Shadow Fight 2"> | **[Shadow Fight 2](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26377.-.Shadow.Fight.2.zip)** | PPSA26377 | 2.46.0 | Playable |
+| <img src="games/jetpack-joyride/icon0.png" width="64" alt="Jetpack Joyride"> | **[Jetpack Joyride](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26378.-.Jetpack.Joyride.zip)** | PPSA26378 | 1.104.1 | Playable |
+| <img src="games/temple-run-2/icon0.png" width="64" alt="Temple Run 2"> | **[Temple Run 2](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26379.-.Temple.Run.2.zip)** | PPSA26379 | 1.137.0 | Playable |
+| <img src="games/fruit-ninja/icon0.png" width="64" alt="Fruit Ninja"> | **[Fruit Ninja](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26380.-.Fruit.Ninja.zip)** | PPSA26380 | 2.8.9 | Playable (stutters in menus) |
 
 Every game plays with the DualSense: its own controller support where it has one, otherwise
 the buttons are set up for its touch controls.
