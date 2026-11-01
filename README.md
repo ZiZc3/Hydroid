@@ -38,11 +38,11 @@ Powered by Hydroid.
 1. Download the game's app from [Releases](../../releases) and unzip it.
 2. Copy its folder to the PS5 and install it as a homebrew title (for example with ShadowMountPlus):
    `/data/homebrew/<app>`
-3. Put your own copy of the game (`.apk`, `.xapk`, `.apks` or `.apkm`) in the app's `game` folder over FTP:
+3. Put a copy of the game (`.apk`, `.xapk`, `.apks` or `.apkm`) in the app's `game` folder:
    `/data/homebrew/<app>/game`
 4. Start the app from the home screen.
 
-The apps don't include the games. Use your own copy, in the version tested.
+The apps don't include the games. use the tested versions for best compatibility.
 
 ## License
 
