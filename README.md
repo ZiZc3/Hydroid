@@ -34,7 +34,7 @@ Each app is made and tested for its one game, so an update for one game never br
 | <img src="games/shadow-fight-2/icon0.png" width="64" alt="Shadow Fight 2"> | **Shadow Fight 2** | PPSA26377 | 2.46.0 | Playable |
 | <img src="games/jetpack-joyride/icon0.png" width="64" alt="Jetpack Joyride"> | **Jetpack Joyride** | PPSA26378 | 1.104.1 | Playable |
 | <img src="games/temple-run-2/icon0.png" width="64" alt="Temple Run 2"> | **Temple Run 2** | PPSA26379 | 1.137.0 | Playable |
-| <img src="games/fruit-ninja/icon0.png" width="64" alt="Fruit Ninja"> | **Fruit Ninja** | PPSA26380 | 2.8.9 | Playable |
+| <img src="games/fruit-ninja/icon0.png" width="64" alt="Fruit Ninja"> | **Fruit Ninja** | PPSA26380 | 2.8.9 | Playable (stutters in menus) |
 
 Every game plays with the DualSense: its own controller support where it has one, otherwise
 the buttons are set up for its touch controls.
@@ -60,12 +60,10 @@ Mesa (OpenGL, RADV Vulkan) ·
 
 ## Disclaimer
 
-Hydroid runs games you own on hardware you own. It contains no game files and no Sony or
-Google code. Not affiliated with Sony, Google or any game publisher.
-
-## License
-
 GPL-3.0. See [LICENSE](LICENSE).
 
 The Android robot is reproduced or modified from work created and shared by Google and used
 according to terms described in the Creative Commons 3.0 Attribution License.
+
+Hydroid runs games you own on hardware you own. It contains no game files and no Sony or
+Google code. Not affiliated with Sony, Google or any game publisher.
