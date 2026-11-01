@@ -65,7 +65,6 @@ Mesa ([OpenGL](https://github.com/darkxex/ps5-opengl), [RADV Vulkan](https://git
 [Boost](https://www.boost.org) ·
 [stb](https://github.com/nothings/stb) ·
 [Android NDK](https://developer.android.com/ndk) ·
-the PS5 payload SDK (through PS5_Vulkan).
 
 Fonts: [Outfit](https://github.com/Outfitio/Outfit-Fonts) and
 [Noto Sans CJK](https://github.com/notofonts/noto-cjk) (SIL Open Font License) ·
