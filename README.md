@@ -5,7 +5,7 @@
 <h1 align="center">Hydroid</h1>
 
 <p align="center">
-  <b>Android games on PS5.</b><br>
+  <b>Android games on PS5. Not an emulator.</b><br>
 </p>
 
 <p align="center">
