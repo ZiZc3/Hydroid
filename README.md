@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/logo.png" width="200" alt="PS5 Android Collection">
+  <img src="docs/logo.png" width="200" alt="Hydroid">
 </p>
 
-<h1 align="center">PS5 Android Collection</h1>
+<h1 align="center">Hydroid</h1>
 
 <p align="center">
   <b>Android games on PS5.</b><br>
