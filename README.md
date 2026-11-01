@@ -30,6 +30,10 @@ Made for the PS5. The same code can also run on Linux or Windows.
 **Only 64-bit games.** Hydroid runs 64-bit (arm64) Android games only: the game's APK must have
 `lib/arm64-v8a`. Games that ship only 32-bit code don't run.
 
+**More engines can be added.** Unity, Cocos2d-x, Godot, Unreal, Halfbrick's Mortar and native
+games work today. Each engine is a small host in `src/`, so developers can add new ones: see
+[Adding an engine](PORTING.md#6-adding-an-engine).
+
 ## Games
 
 | | Game | App | Version tested | State |

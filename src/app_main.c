@@ -949,7 +949,7 @@ static void note_engine(const char *engine) {
 
 // The game's files made ready: its bundle unpacked (once), its archives open, its
 // libraries out, its APKs read ahead into the file cache. This runs on a
-// thread during its launch animation (so the game starts sooner); run_apk() after.
+// thread while the app starts (so the game starts sooner); run_apk() after.
 // Errors are kept for run_apk to show: this may run on that thread.
 static char prep_file[256], prep_error[160];
 // What the load is doing, when it takes long

@@ -84,3 +84,39 @@ Write tool names, one per line, in `tools.txt` in the game's folder on the conso
 
 `xtool.txt` in the game's folder traces functions of the game's own code by library + offset
 (arguments and results in the log); see `src/arm_trace.c`.
+
+## 6. Adding an engine
+
+Each engine Hydroid knows has a small "host" in `src/`: it plays the part of the engine's Java
+side (Android's Activity, its GL thread and its input) and calls the engine's native functions in
+the order the engine's own Java would.
+
+| Engine | Host |
+|---|---|
+| Unity | `unity_host.c` |
+| Cocos2d-x | `cocos_host.c` |
+| Halfbrick's Mortar | `mortar_host.c` |
+| Godot | `godot_host.c` |
+| Unreal / GameActivity | `gameactivity_host.c` |
+| NativeActivity | `native_activity.c` |
+| GTA San Andreas (its own engine) | `gtasa_host.c` |
+
+A new one is two functions, as the others have:
+
+```c
+// a library of the game is this engine: one of its own natives is there
+int myengine_detect(so_module *mod) { return so_sym(mod, "Java_com_example_engine_Native_init") != NULL; }
+
+// the engine's Java side: its init calls, then its frame call in a loop; poll() hands over
+// the DualSense's input each frame. Never returns.
+void myengine_run(so_module *mod, const char *apk_path, myengine_poll_fn poll);
+```
+
+1. Read the engine's Java (decompile the game's APK, e.g. with jadx): which `native` methods its
+   Activity / view / renderer call, in what order, with what arguments.
+2. Write `src/myengine_host.c` and `.h`: `godot_host.c` (the smallest) and `mortar_host.c` are good
+   ones to copy from. Java calls the engine makes back are answered in `src/java_layer.c`.
+3. Add its detect / run to `run_apk` in `src/app_main.c`, next to the others.
+4. Add `myengine_host` to the file list in `title/build-title.sh`.
+
+The log says which host started (`Android: <engine> game (...)`), or that none matched the game.
