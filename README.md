@@ -46,6 +46,19 @@ the buttons are set up for its touch controls (the Sonic games: swipes, and tilt
 
 The apps don't include the games. use the tested versions for best compatibility.
 
+## Built on
+
+[dynarmic](https://github.com/lioncash/dynarmic) (ARM JIT) ·
+[FalsoJNI](https://github.com/v-atamanenko/FalsoJNI) (JNI) ·
+Mesa (OpenGL, RADV Vulkan) ·
+[astc-encoder](https://github.com/ARM-software/astc-encoder) ·
+[stb](https://github.com/nothings/stb).
+
+## Disclaimer
+
+Hydroid runs games you own on hardware you own. It contains no game files and no Sony or
+Google code. Not affiliated with Sony, Google or any game publisher.
+
 ## License
 
 GPL-3.0. See [LICENSE](LICENSE).
