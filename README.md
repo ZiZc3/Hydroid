@@ -40,7 +40,7 @@ Powered by Hydroid.
    `/data/homebrew/`
 3. Put a copy of the game (`.apk`, `.xapk`, `.apks` or `.apkm`) in the app's `game` folder:
    `/data/homebrew/<app>/game`
-4. Start the app from the home screen.
+4. Start the game.
 
 The apps don't include the games. use the tested versions for best compatibility.
 
