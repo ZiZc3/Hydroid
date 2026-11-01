@@ -17,13 +17,15 @@
 
 ## About
 
-Hydroid runs Android games on the PS5. It comes in two parts:
+Hydroid loads a game's own arm64 libraries, translates its ARM code to x86-64 as it runs, and
+answers every call the game makes to Android itself: the C library, the Linux kernel, the
+graphics drivers, sound, input and the Java framework. There is no Android image underneath.
+Each piece is written one function at a time, as games ask for it.
 
-- **9 games, ready to play.** Each one is a separate PS5 app with its own name, icon and
-  background. There is no launcher and no menu in between: the app opens straight into the game.
-  Each app is made and tested for its one game, so an update for one game never breaks another.
-- **The source, to port more.** The engine, its build and the tools to turn another Android game
+**The source and The engine,** its build and the tools to turn almost any Android game
   into its own PS5 app. See [Building](BUILD.md) and [Porting a game](PORTING.md).
+
+Made for the PS5. The same code can also run on Linux or Windows.
 
 ## Games
 
