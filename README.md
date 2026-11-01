@@ -17,10 +17,13 @@
 
 ## About
 
-Each game in the collection is a separate PS5 app with its own name, icon and background.
-There is no launcher and no menu in between: the app opens straight into the game.
+Hydroid runs Android games on the PS5. It comes in two parts:
 
-Each app is made and tested for its one game, so an update for one game never breaks another.
+- **9 games, ready to play.** Each one is a separate PS5 app with its own name, icon and
+  background. There is no launcher and no menu in between: the app opens straight into the game.
+  Each app is made and tested for its one game, so an update for one game never breaks another.
+- **The source, to port more.** The engine, its build and the tools to turn another Android game
+  into its own PS5 app. See [Building](BUILD.md) and [Porting a game](PORTING.md).
 
 ## Games
 
@@ -55,8 +58,21 @@ The apps don't include the games. use the tested versions for best compatibility
 [dynarmic](https://github.com/lioncash/dynarmic) (ARM JIT) ·
 [FalsoJNI](https://github.com/v-atamanenko/FalsoJNI) (JNI) ·
 Mesa ([OpenGL](https://github.com/darkxex/ps5-opengl), [RADV Vulkan](https://github.com/mihawk-99/PS5_Vulkan)) ·
+[ANGLE](https://chromium.googlesource.com/angle/angle) (OpenGL ES on Vulkan) ·
 [astc-encoder](https://github.com/ARM-software/astc-encoder) ·
-[stb](https://github.com/nothings/stb).
+[FFmpeg](https://ffmpeg.org) (video) ·
+[Mbed TLS](https://github.com/Mbed-TLS/mbedtls) (HTTPS) ·
+[Boost](https://www.boost.org) ·
+[stb](https://github.com/nothings/stb) ·
+[Android NDK](https://developer.android.com/ndk) ·
+the PS5 payload SDK (through PS5_Vulkan).
+
+Fonts: [Outfit](https://github.com/Outfitio/Outfit-Fonts) and
+[Noto Sans CJK](https://github.com/notofonts/noto-cjk) (SIL Open Font License) ·
+icons: [Hugeicons](https://hugeicons.com) (MIT) ·
+root certificates: Mozilla's, as [curl](https://curl.se/docs/caextract.html) ships them (MPL-2.0) ·
+menu sound: Romain Raynal's Modern UI Vol.1 (CC0).
+Each one's license is in its folder or at its link.
 
 ## Disclaimer
 

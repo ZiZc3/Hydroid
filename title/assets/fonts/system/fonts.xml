@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hydroid's phone font list (a game's /system/etc/fonts.xml): Chinese, Japanese and Korean, as
+     an Android phone has them. Noto Sans CJK (SIL Open Font License, OFL.txt): its faces JP 0,
+     KR 1, SC 2, TC 3, HK 4 -->
+<familyset version="23">
+    <family lang="zh-Hans">
+        <font weight="400" style="normal" index="2">NotoSansCJK-Regular.ttc</font>
+    </family>
+    <family lang="zh-Hant zh-Bopo">
+        <font weight="400" style="normal" index="3">NotoSansCJK-Regular.ttc</font>
+    </family>
+    <family lang="zh-Hant zh-Bopo">
+        <font weight="400" style="normal" index="4">NotoSansCJK-Regular.ttc</font>
+    </family>
+    <family lang="ja">
+        <font weight="400" style="normal" index="0">NotoSansCJK-Regular.ttc</font>
+    </family>
+    <family lang="ko">
+        <font weight="400" style="normal" index="1">NotoSansCJK-Regular.ttc</font>
+    </family>
+</familyset>

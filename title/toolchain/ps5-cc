@@ -1,0 +1,5 @@
+#!/bin/sh
+# The PS5 compiler as our title build uses it (PS5_Vulkan's clang wrapper), for CMake.
+vk=${PS5_VULKAN:-$HOME/ps5/PS5_Vulkan}
+export PS5_PAYLOAD_SDK=${PS5_PAYLOAD_SDK:-$vk/.deps/native/ps5-payload-sdk}
+exec sh "$vk/tooling/prospero-clang18" "$@"

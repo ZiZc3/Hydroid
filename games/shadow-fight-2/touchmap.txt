@@ -1,0 +1,6 @@
+# made in Keymap Editor (hold Options in the game > Keymap Editor)
+stick 211 866 130
+button 96 1684 971
+button 99 1806 843
+button 100 958 933
+button 97 1263 819

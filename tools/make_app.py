@@ -1,7 +1,11 @@
 # make_app.py — one game's PS5 app: the Hydroid engine build + the game's settings and art.
 #
-#   python tools/make_app.py games/subway-surfers --engine <the engine's title folder>
+#   python tools/make_app.py games/subway-surfers --engine dist/PPSA00000
 #   -> dist/<title id>/  (install it as a homebrew title; the game's own file goes in its game folder)
+#
+# A game's folder: game.json (name, package, titleId, label: 16 letters/digits, testedVersion),
+# icon0.png, background.png (any size: cut to 16:9) and, if it needs one, touchmap.txt (its
+# button layout, made in the Keymap Editor: see PORTING.md).
 #
 # Needs Pillow and etcpak (pip install pillow etcpak).
 import argparse
@@ -67,6 +71,7 @@ def main():
     p["contentId"] = f"UP9000-{g['titleId']}_00-{g['label']}"
     p["conceptId"] = g["titleId"][4:]
     p["localizedParameters"]["en-US"]["titleName"] = g["name"]
+    p["downloadDataSize"] = 0  # no extra storage: the game's data lives in its app folder
     with open(os.path.join(out, "sce_sys", "param.json"), "w", newline="\n") as f:
         json.dump(p, f, indent=4)
     Image.open(os.path.join(a.game, "icon0.png")).convert("RGBA").resize((512, 512), Image.LANCZOS).save(
@@ -74,6 +79,9 @@ def main():
     bg = background(os.path.join(a.game, "background.png"))
     write_bc7_dds(bg, os.path.join(out, "sce_sys", "pic0.dds"))
     write_bc7_dds(bg, os.path.join(out, "sce_sys", "pic1.dds"))
+    keymap = os.path.join(a.game, "touchmap.txt")
+    if os.path.isfile(keymap):  # its button layout (the engine reads /app0/touchmap.txt)
+        shutil.copy(keymap, os.path.join(out, "touchmap.txt"))
     print(f"{out}: {g['name']} ({g['titleId']}, {g['package']})")
 
 

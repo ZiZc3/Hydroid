@@ -1,2 +1,11 @@
 dist/
 __pycache__/
+*.elf
+*.so
+*.zip
+APK/
+*.apk
+*.xapk
+*.apks
+*.apkm
+logs/

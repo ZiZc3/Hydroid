@@ -1,0 +1,6 @@
+# Functions the PS5's libc doesn't have: the console logs "imports: NAME has no code on this
+# console (slot empty)" at Hydroid's start, and a call to one is a jump to address 0 (a crash).
+# Hydroid's own code must never import them; title/build-title.sh stops the build when it does.
+# Add a name whenever a console log shows a new one.
+# (games' ARM code can call them: Hydroid answers those itself, e.g. bionic_shim.c's)
+strcasestr

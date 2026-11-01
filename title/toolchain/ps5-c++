@@ -1,0 +1,4 @@
+#!/bin/sh
+vk=${PS5_VULKAN:-$HOME/ps5/PS5_Vulkan}
+export PS5_PAYLOAD_SDK=${PS5_PAYLOAD_SDK:-$vk/.deps/native/ps5-payload-sdk}
+exec sh "$vk/tooling/prospero-clang18" --driver-mode=g++ "$@"
