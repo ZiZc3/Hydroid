@@ -47,6 +47,7 @@ games work today. Each engine is a small host in `src/`, so developers can add n
 | <img src="games/jetpack-joyride/icon0.png" width="64" alt="Jetpack Joyride"> | **[Jetpack Joyride](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26378.-.Jetpack.Joyride.zip)** | PPSA26378 | 1.104.1 | Playable |
 | <img src="games/temple-run-2/icon0.png" width="64" alt="Temple Run 2"> | **[Temple Run 2](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26379.-.Temple.Run.2.zip)** | PPSA26379 | 1.137.0 | Playable |
 | <img src="games/fruit-ninja/icon0.png" width="64" alt="Fruit Ninja"> | **[Fruit Ninja](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26380.-.Fruit.Ninja.zip)** | PPSA26380 | 2.8.9 | Playable (stutters in menus) |
+| <img src="games/cut-the-rope/icon0.png" width="64" alt="Cut the Rope"> | **[Cut the Rope](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26385.-.Cut.the.Rope.zip)** | PPSA26385 | 4.2.2 | Playable |
 | <img src="https://raw.githubusercontent.com/ZiZc3/Infinity-Blade-PS5/main/icons/PPSA26383.png" width="64" alt="Infinity Blade I-III"> | **[Infinity Blade](https://github.com/ZiZc3/Infinity-Blade-PS5)** | PPSA26383 | 1.4.3 | Playable |
 
 Every game plays with the DualSense: its own controller support where it has one, otherwise
