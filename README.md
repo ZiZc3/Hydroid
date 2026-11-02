@@ -38,7 +38,7 @@ games work today. Each engine is a small host in `src/`, so developers can add n
 
 | | Game | App | Version tested | State |
 |:---:|---|---|---|---|
-| <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **[Subway Surfers](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26370.-.Subway.Surfers.zip)** | PPSA26370 | 3.70.3 | Playable |
+| <img src="games/subway-surfers/icon0.png" width="64" alt="Subway Surfers"> | **[Subway Surfers](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26370.-.Subway.Surfers.v2.zip)** | PPSA26370 | 3.70.3 | Playable |
 | <img src="games/geometry-dash-lite/icon0.png" width="64" alt="Geometry Dash Lite"> | **[Geometry Dash Lite](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26371.-.Geometry.Dash.Lite.zip)** | PPSA26371 | 2.2.148 | Playable |
 | <img src="games/crossy-road/icon0.png" width="64" alt="Crossy Road"> | **[Crossy Road](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26372.-.Crossy.Road.zip)** | PPSA26372 | 7.14.0 | Playable (stutters in menus) |
 | <img src="games/sonic-dash/icon0.png" width="64" alt="Sonic Dash"> | **[Sonic Dash](https://github.com/ZiZc3/Hydroid/releases/download/1.0.0/PPSA26375.-.Sonic.Dash.zip)** | PPSA26375 | 10.5.1 | Playable (stutters a little) |
