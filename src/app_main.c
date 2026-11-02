@@ -230,6 +230,18 @@ static void *log_writer(void *arg) {
     return NULL;
 }
 
+// tools.txt "SyncLog": every log line written out at once (slow; for a game that dies without a
+// word: its last lines were still in the ring). Asked once the game's tools are read.
+int droid_tool(const char *name); // game_settings.c
+static volatile int game_started; // (set once the game's folder and tools are known; below)
+static int log_sync(void) {
+    static int on = -1;
+    if (on >= 0) return on;
+    extern char game_dir[256];
+    if (!game_started || !strstr(game_dir, "/games/")) return 0; // (its folder, and tools.txt, not known yet)
+    on = droid_tool("SyncLog") != 0;
+    return on;
+}
 static void say(int show, const char *fmt, ...) {
     char buf[1024];
     va_list ap;
@@ -258,6 +270,8 @@ static void say(int show, const char *fmt, ...) {
         snprintf(droid_last_shown, sizeof(droid_last_shown), "%s", !strncmp(buf, "Android: ", 9) ? buf + 9 : buf);
         notify(buf);
         log_flush_now(); // shown on screen: in the file too, now
+    } else if (log_sync()) {
+        log_flush_now(); // SyncLog: every line out now (a sudden death keeps its last lines)
     }
 }
 
@@ -850,9 +864,24 @@ static void run_native_activity(so_module *mod) {
     pthread_t wd;
     if ((droid_quirks & QUIRK_UNREAL) && pthread_create(&wd, NULL, native_watchdog, NULL) == 0) pthread_detach(wd);
     // The game draws and presents on its own thread; this one feeds input.
-    for (;;) {
+    // The Infinity Blade ports: the JIT's report every 5 s, which also saves the warm list (the code the
+    // game ran, translated ahead at the next start; only Unity's and Mortar's loops called it, so
+    // every IB start translated everything again, in the middle of play: stutters)
+    void arm_translate_report(void);
+    const int ib_report = mod->arm64 && droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.");
+    if (ib_report) { // ib_native.cpp: a movie keeps moving while the game loads behind it
+        void ib_movie_keeper_start(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t);
+        ib_movie_keeper_start((uint64_t)so_sym(mod, "_ZN4gles16window_presentedEv"),
+                              (uint64_t)so_sym(mod, "_ZN5uikit16frames_presentedEv"),
+                              (uint64_t)so_sym(mod, "_ZN5uikit11main_windowEv"),
+                              (uint64_t)so_sym(mod, "_ZN5video13current_frameERPKhRiS3_Rm"),
+                              (uint64_t)so_sym(mod, "_ZN5video13release_frameEv"),
+                              (uint64_t)so_sym(mod, "_ZN5uikit18create_boot_windowEPvRKNSt6__ndk112basic_stringIwNS1_11char_traitsIwEENS1_9allocatorIwEEEE"));
+    }
+    for (unsigned tick = 1;; tick++) {
         pad_poll(activity_push_input);
         sceKernelUsleep(8000);
+        if (ib_report && tick % 625 == 0) arm_translate_report();
     }
 }
 
@@ -1080,10 +1109,13 @@ static int prepare_apk(const char *file) {
     for (int i = 0; i < libs.n; i++)
         if (!strncmp(libs.names[i], "libcocos2d", 10) || !strcmp(libs.names[i], "libmortargame.so") ||
             (!strcmp(libs.names[i], "libunity.so") && !unity_kept_on_gl(package)) ||
-            (!strcmp(libs.names[i], "libcandycrushsaga.so") && !strcmp(package, "com.king.candycrushsaga")))
+            (!strcmp(libs.names[i], "libcandycrushsaga.so") && !strcmp(package, "com.king.candycrushsaga")) ||
+            !strcmp(libs.names[i], "libib3.so") || !strcmp(libs.names[i], "libib2.so"))
             droid_angle_auto = 1; // (and Halfbrick's Mortar: Fruit Ninja, Jetpack Joyride; and Unity on
                                   // OpenGL ES - a Unity game on Vulkan stays on Vulkan: this is GLES only;
-                                  // and Candy Crush's GameActivity: ps5-opengl refused its EGL config)
+                                  // and Candy Crush's GameActivity: ps5-opengl refused its EGL config;
+                                  // and the Infinity Blade ports' iOS UE3 on GLES 2: ps5-opengl's shader
+                                  // compiler refused GL_OES_standard_derivatives (dFdx), the screen stayed black)
     for (int i = 0; i < libs.n; i++) {
         char path[400];
         snprintf(path, sizeof(path), "%s/%s", apk_libs, libs.names[i]);
@@ -1202,6 +1234,18 @@ static void setup_obb(void) {
     say(1, "obb: none in the APK (the game may ask for its data)");
 }
 
+static void ipa_progress(const char *text) { say(1, "%s", text); } // (ipa_install.c's progress, on screen)
+// (ipa_install.c: past a run's share of writing, the app starts again - the PS5 slows an app's writes
+// after ~1.3 GB; a new run writes fast again. 0 back: it couldn't)
+int sceSystemServiceLoadExec(const char *path, char *const argv[]);
+static int ipa_relaunch(void) {
+    if (droid_import_missing("sceSystemServiceLoadExec")) return 0;
+    log_flush_now();
+    const int r = sceSystemServiceLoadExec("/app0/eboot.bin", NULL);
+    say(0, "ipa: sceSystemServiceLoadExec -> %#x", r);
+    for (int i = 0; i < 60 && r == 0; i++) sceKernelUsleep(50000); // (the system ends us now)
+    return 0;
+}
 static void run_apk(const char *file) {
     if (prep_state == 0 || strcmp(prep_file, file) != 0) prepare_apk(file); // no launcher: here
     if (prep_state != 1) {
@@ -1212,6 +1256,23 @@ static void run_apk(const char *file) {
     {
         extern const char *java_package; // jni_impl.c: known before any of the game's code runs
         java_package = strdup(package);  // (the per-game fixes ask for it: droid_game_in)
+    }
+    // The Infinity Blade ports: the game itself comes from the player's own .ipa (in the app's game
+    // folder), unpacked once here - on Android the port's launcher screen does it (ipa_install.c)
+    if (droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.")) {
+        int ipa_install(const char *game_dir, void (*say_progress)(const char *text), int (*relaunch)(void));
+        extern char game_dir[256];
+        const int rc = ipa_install(game_dir, ipa_progress, ipa_relaunch);
+        if (rc == -1) {
+            say(1, "Put your Infinity Blade .ipa in this app's game folder (/data/homebrew/<app>/game)");
+            halt();
+        } else if (rc == -3) {
+            say(1, "The game's files couldn't be written from the .ipa: not enough free space?");
+            halt();
+        } else if (rc != 0) {
+            say(1, "Your .ipa couldn't be read (a damaged or wrong file?)");
+            halt();
+        }
     }
     arm_modules_init(apk_libs, lib_extract);
     const char *activity_cls = has_entry("lib/arm64-v8a/libUE4.so") ? "com/epicgames/ue4/GameActivity"
@@ -1361,7 +1422,8 @@ static void run_apk(const char *file) {
     for (int i = 0; i < arm_module_count(); i++) {
         if (so_sym(arm_module(i), "ANativeActivity_onCreate")) {
             note_engine("Native");
-            say(1, "Android: NativeActivity game from the APK");
+            // (the Infinity Blade ports: in the log only - the user doesn't want it on screen)
+            say(!droid_game_in("com.ib3port.,com.ib2port.,com.ib1port."), "Android: NativeActivity game from the APK");
             run_native_activity(arm_module(i));
         }
     }
@@ -1640,6 +1702,8 @@ int main(void) {
     so_import_resolver = droid_resolve;
     so_missing_import = missing;
     so_arm_import_resolver = arm_import;
+    void arm_tls_setup(void); // arm_cpu.cpp: ARM libraries' thread-local storage (ELF TLS)
+    arm_tls_setup();
     if (apk_game) {
         // the app's game: single_game.txt names it, its file is in /app0/game
         static lib_game g;

@@ -1512,6 +1512,28 @@ static void a_glBindFramebuffer(GLenum target, GLuint fb) {
         a_apply();
     }
 }
+// A blit to the screen, its destination in the game's 1920x1080 terms: scaled to the screen's
+// images, as its viewport is (the Infinity Blade III port presents its frame by a blit sized to the
+// window: on the 4K images it filled a quarter, bottom left)
+typedef void (*a_blit_fn)(GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLint, GLbitfield, GLenum);
+static void a_glBlitFramebuffer(GLint sx0, GLint sy0, GLint sx1, GLint sy1, GLint dx0, GLint dy0, GLint dx1,
+                                GLint dy1, GLbitfield mask, GLenum filter) {
+    static a_blit_fn f;
+    if (!f) f = (a_blit_fn)angle_resolve("glBlitFramebuffer");
+    static int scale_blits = -1; // (per game: every other ANGLE game's blits as before)
+    if (scale_blits < 0) scale_blits = droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.") != 0;
+    if (scale_blits && angle_on_screen && (angle_surface_w != angle_window.width || angle_surface_h != angle_window.height) &&
+        angle_window.width > 0 && angle_window.height > 0) {
+        dx0 = (GLint)((int64_t)dx0 * angle_surface_w / angle_window.width);
+        dx1 = (GLint)((int64_t)dx1 * angle_surface_w / angle_window.width);
+        dy0 = (GLint)((int64_t)dy0 * angle_surface_h / angle_window.height);
+        dy1 = (GLint)((int64_t)dy1 * angle_surface_h / angle_window.height);
+        if (filter == 0x2600 /* GL_NEAREST */ && (mask & ~0x4000u) == 0) filter = 0x2601; // (scaled: smooth)
+        static int told;
+        if (told++ < 3) droid_log("gl: ANGLE: a blit to the screen, scaled to %d,%d-%d,%d", dx0, dy0, dx1, dy1);
+    }
+    f(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, mask, filter);
+}
 // Swap interval: always 1, as on ps5-opengl (b_eglSwapInterval) and Vulkan's FIFO - each frame
 // waits for a refresh. Unity asks 0: ANGLE then showed frames as fast as they came (Vector at
 // 120 fps, its game running fast: it moves things per frame)
@@ -1855,6 +1877,7 @@ static void *angle_egl_resolve(const char *name) {
         { "eglChooseConfig", (void *)a_eglChooseConfig },
         { "eglQuerySurface", (void *)a_eglQuerySurface }, { "glViewport", (void *)a_glViewport },
         { "glScissor", (void *)a_glScissor }, { "glBindFramebuffer", (void *)a_glBindFramebuffer },
+        { "glBlitFramebuffer", (void *)a_glBlitFramebuffer },
         { "glGetIntegerv", (void *)a_glGetIntegerv },
         { "eglSwapInterval", (void *)a_eglSwapInterval },
         { "glBindFramebufferOES", (void *)a_glBindFramebuffer },

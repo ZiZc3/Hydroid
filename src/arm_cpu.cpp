@@ -982,7 +982,7 @@ extern "C" int droid_game_in(const char *list); // game_settings.c: a fix for th
 // The faster translator (SharedJit, WarmStart, QuickFirst): for the games it was tested with;
 // every other game as it worked before (tools.txt "SharedJit" / "WarmStart" / "QuickFirst" on,
 // "NoSharedJit" ... off). On for every game it broke Shadow Fight 4 and Subway Surfers.
-#define FAST_JIT_GAMES "com.halfbrick.jetpack,com.imangi.,com.kiloo.subwaysurf,com.rovio.baba,com.sega.sonicdash,com.sega.sonicboomandroid,com.king.candycrushsaga,com.robtopx.geometryjumplite,com.yodo1.crossyroad" // (Subway: tried 2026-10-27, almost no stutter; Angry Birds 2: tried 2026-10-27, works; Sonic Dash: trial 2026-10-27. Nekki: added untested 2026-10-29, Vector 1 broke: out. Geometry Dash Lite: trial 2026-10-31, its game app. Crossy Road: trial 2026-10-31, its game app)
+#define FAST_JIT_GAMES "com.ib3port.,com.ib2port.,com.ib1port.,com.halfbrick.jetpack,com.imangi.,com.kiloo.subwaysurf,com.rovio.baba,com.sega.sonicdash,com.sega.sonicboomandroid,com.king.candycrushsaga,com.robtopx.geometryjumplite,com.yodo1.crossyroad" // (Subway: tried 2026-10-27, almost no stutter; Angry Birds 2: tried 2026-10-27, works; Sonic Dash: trial 2026-10-27. Nekki: added untested 2026-10-29, Vector 1 broke: out. Geometry Dash Lite: trial 2026-10-31, its game app. Crossy Road: trial 2026-10-31, its game app)
 static bool fast_jit_game() { return droid_game_in(FAST_JIT_GAMES) != 0; }
 static bool shared_jit_on() {
     static int on = -1;
@@ -992,7 +992,7 @@ static bool shared_jit_on() {
 // Parallel warm start: the warm threads translate in workshops of their own (dynarmic droid_workshop:
 // own code cache and lock), WARM_WORKSHOPS at once, instead of 2 taking turns at the shared cache's
 // one lock with the game. For the games it was tried with (tools.txt "ParallelWarm" on, "NoParallelWarm" off).
-#define PARALLEL_WARM_GAMES "com.kiloo.subwaysurf,com.robtopx.geometryjumplite,com.yodo1.crossyroad,com.rovio.baba"
+#define PARALLEL_WARM_GAMES "com.ib3port.,com.ib2port.,com.ib1port.,com.kiloo.subwaysurf,com.robtopx.geometryjumplite,com.yodo1.crossyroad,com.rovio.baba"
 constexpr int WARM_WORKSHOPS = 4; // (6 on the PS5: 3.6x slower each, the game's loading threads squeezed)
 constexpr size_t WORKSHOP_CACHE_BYTES = 128 << 20;
 static thread_local int tl_workshop; // a warm thread's workshop number (make_cpu)
@@ -1110,6 +1110,71 @@ struct ThreadState {
     bool released; // a guest thread whose start routine is done
 };
 thread_local ThreadState ts;
+
+// ---- ELF thread-local storage (static TLS) of ARM libraries --------------------------------------
+// A library with PT_TLS (the Infinity Blade III port's libib3.so: its thread_locals through
+// R_AARCH64_TLSDESC) gets a place above each thread's tpidr_el0: from +256 (bionic's slots are
+// below it) up to the block's end (+4096). Every thread's block holds a copy of each template
+// (its initialised bytes, the rest zero); soloader.c points the TLSDESC entries at the resolver
+// with the variable's offset from tpidr. Before: those relocations were skipped, the entries
+// stayed 0, the first thread_local access jumped to address 0 (silently).
+namespace {
+constexpr long TLS_FIRST = 256, TLS_END = (TLS_WORDS / 2) * 8;
+struct TlsTemplate {
+    const void *image;
+    size_t filesz, memsz;
+    long off;
+};
+TlsTemplate tls_templates[16];
+int tls_template_count;
+long tls_next = TLS_FIRST;
+std::mutex tls_lock;
+
+void tls_fill(std::uint64_t *slots) { // a thread's copy of every template (slots = its tpidr)
+    std::lock_guard<std::mutex> g(tls_lock);
+    for (int i = 0; i < tls_template_count; i++) {
+        const TlsTemplate &t = tls_templates[i];
+        char *at = reinterpret_cast<char *>(slots) + t.off;
+        std::memcpy(at, t.image, t.filesz);
+        std::memset(at + t.filesz, 0, t.memsz - t.filesz);
+    }
+}
+} // namespace
+
+extern "C" long arm_tls_add(const void *image, size_t filesz, size_t memsz, size_t align) {
+    long off;
+    {
+        std::lock_guard<std::mutex> g(tls_lock);
+        if (align < 8) align = 8;
+        off = (tls_next + (long)align - 1) & ~((long)align - 1);
+        if (tls_template_count == 16 || off + (long)memsz > TLS_END || filesz > memsz) {
+            droid_log("arm: thread-local storage of %zu bytes: no room (%ld of %ld used)", memsz, tls_next, TLS_END);
+            return -1;
+        }
+        tls_templates[tls_template_count++] = { image, filesz, memsz, off };
+        tls_next = off + (long)memsz;
+    }
+    if (ts.tls_block) { // the loading thread (its constructors run now): its copy at once
+        std::uint64_t *slots = ts.tls_block + TLS_WORDS / 2;
+        char *at = reinterpret_cast<char *>(slots) + off;
+        std::memcpy(at, image, filesz);
+        std::memset(at + filesz, 0, memsz - filesz);
+    }
+    return off;
+}
+
+// the TLSDESC resolver: x0 = the descriptor, its second word the offset; nothing else touched
+extern "C" void arm_tls_setup(void) {
+    extern long (*so_arm_tls_add)(const void *, size_t, size_t, size_t);
+    extern void *so_arm_tlsdesc_resolver;
+    static std::uint32_t *code;
+    if (!code && (code = static_cast<std::uint32_t *>(droid_jit_alloc(8)))) {
+        code[0] = 0xF9400400; // ldr x0, [x0, #8]
+        code[1] = 0xD65F03C0; // ret
+    }
+    so_arm_tls_add = arm_tls_add;
+    so_arm_tlsdesc_resolver = code;
+}
 
 const std::uint64_t stack_guard = (__builtin_ia32_rdtsc() * 0x9E3779B97F4A7C15ull) & ~std::uint64_t(0xFF);
 
@@ -1363,6 +1428,7 @@ bool run(std::uint64_t fn, const std::uint64_t *x, const Vector *v, Vector *v0_o
         // the ARM code of pthread_self / pthread_getspecific (arm_imports.c): its thread's id at
         // tpidr - 2048, the game's key values from tpidr - 4096 (tls_block[0..255], zeroed)
         ts.tls_block[256] = reinterpret_cast<std::uint64_t>(pthread_self());
+        tls_fill(slots); // the ARM libraries' thread_locals (ELF TLS), this thread's copy
         ts.tpidr = reinterpret_cast<std::uint64_t>(slots);
     }
     Cpu *cpu = slot;
@@ -2519,7 +2585,10 @@ extern "C" void arm_warm_named(const char *name) {
 extern "C" const char *game_path(char *out, size_t n, const char *rel); // game_settings.c
 static bool warm_start_on() {
     static int on = -1;
-    if (on < 0) on = shared_jit_on() && !droid_tool("NoWarmStart") && (fast_jit_game() || droid_tool("WarmStart")) ? 1 : 0;
+    // (not the Infinity Blade ports: with last run's list translated ahead, IB2's second start stopped
+    // at its first timer reading - 14 s, then nothing; 2026-11-02. Their list was never saved before.)
+    if (on < 0) on = shared_jit_on() && !droid_tool("NoWarmStart") && (fast_jit_game() || droid_tool("WarmStart")) &&
+                     (!droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.") || droid_tool("WarmStart")) ? 1 : 0;
     return on == 1;
 }
 static std::mutex ws_m;

@@ -185,12 +185,29 @@ int fs_slow_report(long long *ms) {
     return __atomic_exchange_n(&fs_slow_n, 0, __ATOMIC_RELAXED);
 }
 
+// vfile.c: files read straight out of the player's .ipa (the Infinity Blade ports)
+int vfile_open(const char *abs_path, int flags);
+int vfile_owns(int fd);
+int64_t vfile_path_size(const char *abs_path);
+const char *vfile_ipa(void);
+ssize_t vfile_read(int fd, void *buf, size_t n);
+int64_t vfile_lseek(int fd, int64_t off, int whence);
+int64_t vfile_size(int fd);
+int vfile_close(int fd);
+static int vfile_stat(const char *abs_path, struct stat *s) { // 1: one of them (s: the .ipa's, its size)
+    const int64_t size = vfile_path_size(abs_path);
+    if (size < 0 || stat(vfile_ipa(), s) != 0) return 0;
+    s->st_size = (off_t)size;
+    return 1;
+}
+
 static int l_stat(const char *path, linux_stat *out) {
     int p = proc_stat(path, out);
     if (p) return p > 0 ? 0 : -1;
     char ab[600];
     path = droid_abs(path, ab, sizeof(ab));
     struct stat s;
+    if (vfile_stat(path, &s)) { to_linux_stat(&s, out); return 0; }
     if (wb_path_stat(path, &s)) { // being written by us: its size known, the disk not asked
         to_linux_stat(&s, out);
         return 0;
@@ -221,6 +238,7 @@ static int l_lstat(const char *path, linux_stat *out) {
     char ab[600];
     path = droid_abs(path, ab, sizeof(ab));
     struct stat s;
+    if (vfile_stat(path, &s)) { to_linux_stat(&s, out); return 0; }
     if (wb_path_stat(path, &s)) {
         to_linux_stat(&s, out);
         return 0;
@@ -247,6 +265,13 @@ static int l_lstat(const char *path, linux_stat *out) {
 }
 
 static int l_fstat(int fd, linux_stat *out) {
+    if (vfile_owns(fd)) {
+        struct stat s;
+        if (fstat(fd, &s) != 0) return -1;
+        s.st_size = (off_t)vfile_size(fd);
+        to_linux_stat(&s, out);
+        return 0;
+    }
     wb_flush(fd); // its size: with what waits to be written
     struct stat s;
     int r = fstat(fd, &s);
@@ -620,6 +645,29 @@ static void open_counted(const char *path, double ms) {
     pthread_mutex_unlock(&lock);
 }
 
+// Infinity Blade II at 60 fps: the stock 1.3.5 .ipa caps its engine at 30 (MaxSmoothedFrameRate);
+// the port's "60" adds no line for IB2 (only the Community Patch's Commands.txt raises it, to 62).
+// The port writes its startup commands (<game>/userdata/Library/Caches/port/Commands.txt) at every
+// start and the engine reads them: the Community Patch's line is added when the game opens it.
+void ib2_sixty(const char *path, int flags) {
+    static int on = -1;
+    if (on < 0) on = droid_game_in("com.ib2port.") != 0;
+    const size_t n = strlen(path), k = strlen("/Library/Caches/port/Commands.txt");
+    if (!on || (flags & 3) != 0 || n < k || strcmp(path + n - k, "/Library/Caches/port/Commands.txt")) return;
+    FILE *f = fopen(path, "rb");
+    if (!f) return;
+    char buf[65536];
+    const size_t got = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+    buf[got] = 0;
+    if (strstr(buf, "MaxSmoothedFrameRate")) return; // (the player's own .ipa or setting says)
+    if ((f = fopen(path, "ab"))) {
+        fputs("\n; Added by Hydroid: 60 fps, as the Community Patch\nSet Engine MaxSmoothedFrameRate 62\n", f);
+        fclose(f);
+        droid_log("ib2: 60 fps (MaxSmoothedFrameRate 62 added to the startup commands)");
+    }
+}
+
 static int l_open(const char *path, int flags, int mode) {
     char ab[600];
     struct timespec t0, t1;
@@ -629,9 +677,15 @@ static int l_open(const char *path, int flags, int mode) {
     int fd = droid_proc_open(path);
     char real[512];
     if (fd == -2) {
+        const int v = vfile_open(path, flags);
+        if (v >= 0) return v;
+        if (v == -2) return -1;
+    }
+    if (fd == -2) {
         double t0 = fs_now();
         wb_flush_path(path); // what we still hold for this file written first (opened again)
         fs_slow("open: its pending writes", path, t0);
+        ib2_sixty(path, flags);
         t0 = fs_now();
         int ct = cache_fs_begin("open", path);
         fd = open(droid_real_path(path, real, sizeof(real)), host_open_flags(flags), mode);
@@ -859,8 +913,9 @@ static void *l_memmove_chk(void *d, const void *s, size_t n, size_t dlen) {
 }
 static ssize_t l_read_chk(int fd, void *buf, size_t n, size_t buflen) {
     (void)buflen;
-    return read(fd, buf, n);
+    return vfile_owns(fd) ? vfile_read(fd, buf, n) : read(fd, buf, n);
 }
+
 static size_t l_strlen_chk(const char *s, size_t slen) {
     (void)slen;
     return strlen(s);
@@ -1031,6 +1086,14 @@ static const char *system_fonts(const char *path, char *buf, size_t n) {
         return buf;
     }
     if (!strncmp(path, "/system/fonts", 13) && (path[13] == 0 || path[13] == '/')) {
+        // the Infinity Blade ports draw the game's labels with the phone's Roboto / Droid Sans
+        // (none: "no system font found; text will not be drawn"): Hydroid's sans font instead
+        static int ib = -1;
+        if (ib < 0) ib = droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.") != 0;
+        if (ib && (strstr(path, "/Roboto") || strstr(path, "/DroidSans"))) {
+            snprintf(buf, n, APP0 "/assets/fonts/%s", strstr(path, "Bold") ? "Outfit-Bold.ttf" : "Outfit-Regular.ttf");
+            return buf;
+        }
         snprintf(buf, n, APP0 "/assets/fonts/system%s", path + 13);
         return buf;
     }
@@ -1115,6 +1178,7 @@ static long l_writev(int fd, const struct iovec *v, int n) {
 }
 static long l_lseek(int fd, long off, int whence) {
     long at;
+    if (vfile_owns(fd)) return (long)vfile_lseek(fd, off, whence);
     if (wb_lseek(fd, off, whence, &at)) return at; // where it is: no wait for the disk
     at = (long)lseek(fd, off, whence);
     if (at >= 0) wb_seeked(fd, at);
@@ -1182,6 +1246,7 @@ static int l_access(const char *p, int m) {
     int pr = proc_stat(p, NULL);
     if (pr) return pr > 0 && !(m & 2) ? 0 : (errno = pr > 0 ? EACCES : ENOENT, -1); // read-only
     ABS(p, b1);
+    if (vfile_path_size(p) >= 0) return m & 2 ? (errno = EROFS, -1) : 0;
     int ct = cache_fs_begin("access", p);
     int r = access(p, m);
     cache_fs_end(ct);
@@ -1875,6 +1940,11 @@ static int file_map_at(const void *addr) {
 static int mm_log(void);
 static void mm_say(const char *what, void *addr, size_t len, long a, long b);
 static void *l_mmap(void *addr, size_t len, int prot, int flags, int fd, long off) {
+    if (fd >= 0 && vfile_owns(fd)) { // (a file read out of the .ipa: no mapping of it)
+        droid_log("mmap of a file read from the .ipa (fd %d, %zu bytes): refused", fd, len);
+        errno = ENODEV;
+        return (void *)-1;
+    }
     if (fd >= 0) wb_flush(fd);
     if (mm_log()) mm_say("mmap", addr, len, prot, flags);
     if ((long)len < 0) { // a size gone negative: who asks (once), and no mapping

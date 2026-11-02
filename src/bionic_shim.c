@@ -184,6 +184,8 @@ static FILE *b_fopen(const char *path, const char *mode) {
     int proc = droid_proc_open(path); // the PS5 has no /proc: made by us (linux_abi.c)
     if (proc != -2) return proc >= 0 ? fdopen(proc, "r") : NULL;
     char fast[512];
+    void ib2_sixty(const char *path, int flags); // linux_abi.c: IB2's startup commands at 60 fps
+    if (mode && mode[0] == 'r' && !strchr(mode, '+')) ib2_sixty(real, 0);
     FILE *f = fopen(droid_real_path(real, fast, sizeof(fast)), mode);
     droid_log("fopen(%s%s%s, %s) = %p", path, real != path ? " -> " : "", real != path ? real : "",
               mode, (void *)f);
@@ -622,7 +624,12 @@ static int b_posix_memalign(void **out, size_t align, size_t n) {
 void net_nonblock_set(int fd, int on); // net_shim.c
 void netspy_closed(int fd);             // net_shim.c: NetSpy's summary of a connection
 int wb_close(int fd); // write_behind.c: a big file closed by its writer, after its writes
+int vfile_owns(int fd); // vfile.c: a file read out of the .ipa (the Infinity Blade ports)
+int vfile_close(int fd);
+ssize_t vfile_read(int fd, void *buf, size_t n);
+static ssize_t b_read(int fd, void *buf, size_t n) { return vfile_owns(fd) ? vfile_read(fd, buf, n) : read(fd, buf, n); }
 static int b_close(int fd) {
+    if (vfile_owns(fd)) return vfile_close(fd);
     if (wb_close(fd)) return 0;
     netspy_closed(fd);
     return close(fd);
@@ -969,7 +976,7 @@ static const struct { const char *name; void *fn; } table[] = {
     P(strstr), B("strcasestr", droid_strcasestr), P(strdup), P(strtol), P(strtoul), P(strtod), P(strtof), P(atoi), P(atof),
     P(strerror), B("rand", b_rand), B("srand", b_srand), P(qsort), B("getenv", b_getenv), P(exit), P(getpid),
     // files
-    P(open), B("close", b_close), P(read), P(write), P(lseek), B("pipe", b_pipe), P(stat), P(fstat), P(unlink),
+    P(open), B("close", b_close), B("read", b_read), P(write), P(lseek), B("pipe", b_pipe), P(stat), P(fstat), P(unlink),
     P(mkdir), P(rmdir), P(access), P(chdir), P(chmod), P(getcwd), P(readlink), P(isatty),
     P(poll), P(select), P(munmap), P(setenv),
     // time, strings, ctype, wide chars, locale data

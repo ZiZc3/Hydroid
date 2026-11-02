@@ -252,6 +252,8 @@ static droid_input_queue the_queue = { .fds = { -1, -1 }, .lock = PTHREAD_MUTEX_
 
 static void AInputQueue_attachLooper(droid_input_queue *q, droid_looper *l, int ident,
                                      looper_callback cb, void *data) {
+    droid_log("activity: input queue attached to looper %p (ident %d, callback %p, fd %d)", (void *)l, ident,
+              (void *)cb, q->fds[0]);
     ALooper_addFd(l, q->fds[0], ident, ALOOPER_EVENT_INPUT, cb, data);
 }
 
@@ -274,6 +276,10 @@ static int AInputQueue_getEvent(droid_input_queue *q, droid_input_event **out) {
     *out = &q->events[q->tail % QUEUE_SIZE];
     q->tail++;
     pthread_mutex_unlock(&q->lock);
+    static int told; // the first events the game takes (where the pad stops, if it does)
+    if (told++ < 12)
+        droid_log("activity: the game takes an input event: type %d, source %#x, key %d, action %d", (*out)->type,
+                  (*out)->source, (*out)->keycode, (*out)->action);
     return 0;
 }
 
@@ -295,6 +301,11 @@ void activity_push_input(const droid_input_event *in) {
     // clicked). Other games: as before (Unity, cocos, GTA have their own input paths).
     droid_input_event touch;
     const droid_input_event *e = in;
+    // The Infinity Blade ports: the touchpad does nothing (the user: as a touchscreen and its click
+    // as Select it kept opening the port's menus during fights; the right stick slashes)
+    static int ib_game = -1;
+    if (ib_game < 0) ib_game = droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.") != 0;
+    if (ib_game && in->type == 1 && in->keycode == 109) return;
     if (in->type == DROID_EVENT_TOUCH && (droid_quirks & QUIRK_UNREAL)) {
         static int down;
         static float last_x, last_y;
@@ -315,13 +326,24 @@ void activity_push_input(const droid_input_event *in) {
         e = &touch;
     }
     pthread_mutex_lock(&q->lock);
+    int queued = 0;
     if (q->head - q->tail < QUEUE_SIZE) {
         q->events[q->head % QUEUE_SIZE] = *e;
         q->head++;
         char byte = 1;
         (void)write(q->fds[1], &byte, 1);
+        queued = 1;
     }
+    const unsigned waiting = q->head - q->tail;
     pthread_mutex_unlock(&q->lock);
+    static int told; // the first events queued, and a full queue (the game never takes them)
+    if (e->type == 1 && told < 12) {
+        told++;
+        droid_log("activity: pad event queued: key %d, action %d, source %#x (%u waiting)", e->keycode, e->action, e->source,
+                  waiting);
+    }
+    static int full_told;
+    if (!queued && full_told++ < 3) droid_log("activity: input queue full (%u waiting): the game doesn't take its events", waiting);
 }
 
 // ---- AConfiguration: a TV, landscape, English -----------------------------

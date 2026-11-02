@@ -36,6 +36,11 @@ void *(*so_import_resolver)(const char *name);
 void (*so_missing_import)(const char *name);
 void *(*so_arm_import_resolver)(const char *name, int is_data);
 void *(*so_arm_interpose)(const char *name);
+// ELF thread-local storage of an ARM library (PT_TLS; R_AARCH64_TLSDESC / TLS_TPREL64): its
+// template registered with the JIT (arm_cpu.cpp arm_tls_add: its offset from tpidr_el0, every
+// thread gets a copy there), and the TLSDESC resolver (ARM code: ldr x0, [x0, #8]; ret).
+long (*so_arm_tls_add)(const void *image, size_t filesz, size_t memsz, size_t align);
+void *so_arm_tlsdesc_resolver;
 
 static uint64_t missing_import(void) { return 0; }
 
@@ -192,6 +197,16 @@ int so_load(const char *path, so_module *mod) {
             break;
         }
     }
+    // its thread-local storage (PT_TLS, 7): the template's place in every thread's block
+    long tls_off = -1;
+    for (int i = 0; i < ehdr.e_phnum; i++) {
+        if (phdr[i].p_type != 7 || ehdr.e_machine != EM_AARCH64) continue;
+        if (so_arm_tls_add)
+            tls_off = so_arm_tls_add((char *)base + (phdr[i].p_vaddr - lo), phdr[i].p_filesz, phdr[i].p_memsz,
+                                     phdr[i].p_align ? phdr[i].p_align : 8);
+        droid_log("soloader: %s: thread-local storage %llu bytes (%llu initialised), at tpidr+%ld", path,
+                  (unsigned long long)phdr[i].p_memsz, (unsigned long long)phdr[i].p_filesz, tls_off);
+    }
 
     // parse dynamic entries for the relocation tables
     Elf64_Sym *symtab = NULL;
@@ -267,6 +282,26 @@ int so_load(const char *path, so_module *mod) {
             const Elf64_Rela *r = &tables[t][i];
             uint32_t type = ELF64_R_TYPE(r->r_info);
             uint64_t *where = (uint64_t *)((char *)base + (r->r_offset - lo));
+            // thread-local variables (this library's own, static TLS): TLSDESC (1031) gets the
+            // resolver and the variable's offset from tpidr_el0; TLS_TPREL64 (1030) the offset
+            if (arm && (type == 1031 || type == 1030)) {
+                const Elf64_Sym *sym = &symtab[ELF64_R_SYM(r->r_info)];
+                static int told;
+                if (tls_off < 0 || (ELF64_R_SYM(r->r_info) && sym->st_shndx == SHN_UNDEF)) {
+                    if (told++ < 10)
+                        droid_log("soloader: %s: TLS relocation %u for %s not supported (another library's)", path, type,
+                                  ELF64_R_SYM(r->r_info) ? strtab + sym->st_name : "(local)");
+                    continue;
+                }
+                const uint64_t off = (uint64_t)tls_off + (ELF64_R_SYM(r->r_info) ? sym->st_value : 0) + (uint64_t)r->r_addend;
+                if (type == 1031) {
+                    where[0] = (uint64_t)so_arm_tlsdesc_resolver;
+                    where[1] = off;
+                } else {
+                    where[0] = off;
+                }
+                continue;
+            }
             // AArch64's codes for the same four kinds (an ARM64 game for the JIT).
             if (arm) {
                 type = type == 1027 ? R_X86_64_RELATIVE : type == 1025 ? R_X86_64_GLOB_DAT

@@ -58,7 +58,7 @@ cflags=(-O2 -march=znver2 -Wall -std=gnu11 -I"$repo/src" -I"$fjni" -I"$repo/src/
 cc "${cflags[@]}" -c "$repo/src/app_main.c" -o "$work/obj/app_main.o"
 cc "${cflags[@]}" -c "$repo/src/soloader.c" -o "$work/obj/soloader.o"
 vk_include=$vk/.deps/native/radv-release/include
-for f in android_shim imangi_xls texspy phone_gl https game_backup firebase_rc mediandk video_tex video_player gameactivity_host write_behind big_files thread_place libc_extra gtasa_host cocos_host mortar_host bionic_shim native_activity display opensl arm_imports linux_abi apk godot_host \
+for f in android_shim wide32 ipa_install vfile imangi_xls texspy phone_gl https game_backup firebase_rc mediandk video_tex video_player gameactivity_host write_behind big_files thread_place libc_extra gtasa_host cocos_host mortar_host bionic_shim native_activity display opensl arm_imports linux_abi apk godot_host \
     arm_modules unity_host java_layer vulkan_bridge overlay_stats quick_menu ui_icons sensors dpad_grid keymap vk_ps5 overlay_art game_settings ui_gl ui_font ui_sound game_file net_shim libc_missing unity_patch apk_sign arm_trace; do
     cc "${cflags[@]}" -I"$zlib" -I"$vk_include" -I"$gl_sdk/include" -I"$repo/third_party/stb" -c "$repo/src/$f.c" -o "$work/obj/$f.o"
 done
@@ -110,6 +110,13 @@ cp "$astc_out"/obj/*.o "$work/obj/"
 cc -std=c++17 -O2 -march=znver2 -fexceptions -fcxx-exceptions -I"$astc_src/Source" \
     -c "$repo/src/astc_native.cpp" -o "$work/obj/astc_native.o"
 cc -std=c++17 -O2 -march=znver2 -c "$repo/src/etc_native.cpp" -o "$work/obj/etc_native.o"
+# the Infinity Blade ports' texture conversion, native (src/ib_native.cpp): etcpak (BSD) and their PVRTC
+# decoder (MIT), compiled for Zen 2 instead of running as translated ARM
+for f in ProcessRGB Dither Tables; do
+    cc -std=c++17 -O2 -march=znver2 -c "$repo/third_party/etcpak/$f.cpp" -o "$work/obj/etcpak_$f.o"
+done
+cc -std=c++17 -O2 -march=znver2 -c "$repo/third_party/ib-pvrtc/pvrtc.cpp" -o "$work/obj/ib_pvrtc.o"
+cc -std=c++17 -O2 -march=znver2 -I"$repo/src" -c "$repo/src/ib_native.cpp" -o "$work/obj/ib_native.o"
 # FalsoJNI (MIT, v-atamanenko/FalsoJNI 083d5a0), minus its Vita logger.
 for f in FalsoJNI FalsoJNI_ImplBridge converter; do
     cc "${cflags[@]}" -Wno-format -Wno-unused-variable -Wno-return-type -c "$fjni/$f.c" -o "$work/obj/fjni_$f.o"

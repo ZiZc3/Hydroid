@@ -65,7 +65,10 @@ typedef struct {
     int port;
     volatile int state;
     pthread_t thread;
+    int has_thread; // a callback stream's own output thread (a write stream: the game's writes play)
     uint64_t frames_written;
+    int16_t pend[GRAIN * 2]; // a write stream's frames until a grain is full
+    int npend;
 } aaudio_stream;
 
 static int audio_inited;
@@ -165,19 +168,51 @@ static void *audio_thread(void *arg) {
 int32_t AAudioStream_requestStart(aaudio_stream *s) {
     if (s->state == AAUDIO_STREAM_STATE_STARTED) return AAUDIO_OK;
     s->state = AAUDIO_STREAM_STATE_STARTED;
+    if (!s->cfg.callback) { // a write stream: AAudioStream_write plays (no thread on the same port)
+        droid_log("AAudio: port %#x started, the game writes to it", s->port);
+        return AAUDIO_OK;
+    }
     if (pthread_create(&s->thread, NULL, audio_thread, s) != 0) {
         s->state = AAUDIO_STREAM_STATE_OPEN;
         return AAUDIO_ERROR_UNAVAILABLE;
     }
+    s->has_thread = 1;
     return AAUDIO_OK;
 }
 int32_t AAudioStream_requestStop(aaudio_stream *s) {
     droid_log("AAudio: port %#x stopped by the game", s->port);
     if (s->state == AAUDIO_STREAM_STATE_STARTED) {
         s->state = AAUDIO_STREAM_STATE_STOPPED;
-        pthread_join(s->thread, NULL);
+        if (s->has_thread) pthread_join(s->thread, NULL);
+        s->has_thread = 0;
     }
     return AAUDIO_OK;
+}
+// AAudioStream_write (a stream without a data callback: the Infinity Blade ports' mixer): the frames
+// into 256-frame grains, each played on the stream's port as it fills - sceAudioOutOutput blocks
+// for one grain, as a blocking write on a phone waits for room. All frames are taken.
+int32_t AAudioStream_write(aaudio_stream *s, const void *buffer, int32_t frames, int64_t timeout_ns) {
+    (void)timeout_ns;
+    if (!s || !buffer || frames < 0) return AAUDIO_ERROR_ILLEGAL_ARGUMENT;
+    if (s->state != AAUDIO_STREAM_STATE_STARTED) return -895; // AAUDIO_ERROR_INVALID_STATE
+    const int ch = s->cfg.channels;
+    const float *f = buffer;
+    const int16_t *i16 = buffer;
+    for (int32_t k = 0; k < frames; k++) {
+        for (int c = 0; c < 2; c++) {
+            const int src = k * ch + (ch == 1 ? 0 : c);
+            s->pend[2 * s->npend + c] = s->cfg.format == AAUDIO_FORMAT_PCM_FLOAT ? to_i16(f[src]) : i16[src];
+        }
+        if (++s->npend == GRAIN) {
+            droid_audio_mute_if_paused(s->pend, GRAIN);
+            sceAudioOutOutput(s->port, s->pend);
+            s->frames_written += GRAIN;
+            s->npend = 0;
+        }
+    }
+    static int told;
+    if (!told++) droid_log("AAudio: port %#x, the game's first write: %d frames", s->port, frames);
+    return frames;
 }
 int32_t AAudioStream_requestPause(aaudio_stream *s) { return AAudioStream_requestStop(s); }
 int32_t AAudioStream_close(aaudio_stream *s) {
@@ -286,7 +321,7 @@ static const struct { const char *name; void *fn; } table[] = {
     E(AAudioStream_close), E(AAudioStream_getState), E(AAudioStream_getSampleRate),
     E(AAudioStream_getChannelCount), E(AAudioStream_getFormat),
     E(AAudioStream_getFramesPerBurst), E(AAudioStream_getBufferSizeInFrames),
-    E(AAudioStream_getFramesWritten), E(AAudio_convertResultToText),
+    E(AAudioStream_getFramesWritten), E(AAudio_convertResultToText), E(AAudioStream_write),
     { "AAudioStreamBuilder_setErrorCallback", (void *)aaudio_builder_ignore3 },
     { "AAudioStreamBuilder_setDeviceId", (void *)AAudioStreamBuilder_setIgnored },
     { "AAudioStreamBuilder_setFramesPerDataCallback", (void *)AAudioStreamBuilder_setIgnored },

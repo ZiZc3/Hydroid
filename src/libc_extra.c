@@ -72,10 +72,14 @@ static int x_vsprintf_chk(char *buf, int flags, size_t slen, const char *fmt, co
     }
     return r;
 }
-static ssize_t x_pread(int fd, void *buf, size_t n, int64_t off) { return pread(fd, buf, n, (off_t)off); }
+int vfile_owns(int fd); // vfile.c: a file read out of the .ipa (the Infinity Blade ports)
+ssize_t vfile_pread(int fd, void *buf, size_t n, int64_t off);
+static ssize_t x_pread(int fd, void *buf, size_t n, int64_t off) {
+    return vfile_owns(fd) ? vfile_pread(fd, buf, n, off) : pread(fd, buf, n, (off_t)off);
+}
 static ssize_t x_pread_chk(int fd, void *buf, size_t n, int64_t off, size_t bn) {
     (void)bn;
-    return pread(fd, buf, n, (off_t)off);
+    return x_pread(fd, buf, n, off);
 }
 static ssize_t x_readlink_chk(const char *p, char *buf, size_t n, size_t bn) {
     (void)bn;
@@ -127,10 +131,36 @@ static int x_sigwait(const void *set, int *sig) {
     return EINVAL;
 }
 
-// process_vm_readv: another process's memory - none here (it "succeeded" with 0 bytes)
-static long x_process_vm_readv(void) {
-    errno = ENOSYS;
-    return -1;
+// process_vm_readv: another process's memory - none here (it "succeeded" with 0 bytes).
+// Its own memory, for the Infinity Blade ports: their freeze watchdog walks each game thread's
+// frames with it (only the top two came out: "appSleep", not who waits). A bad address must not
+// crash: each piece goes through a pipe first (write() says EFAULT for memory that isn't there).
+struct x_iovec { void *base; size_t len; };
+static long x_process_vm_readv(int pid, const struct x_iovec *local, unsigned long ln,
+                               const struct x_iovec *remote, unsigned long rn, unsigned long flags) {
+    (void)pid; (void)flags;
+    static int on = -1, pfd[2] = { -1, -1 };
+    static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+    if (on < 0) on = droid_game_in("com.ib3port.,com.ib2port.,com.ib1port.") && pipe(pfd) == 0;
+    if (!on || ln != 1 || !local) { errno = ENOSYS; return -1; }
+    long got = 0;
+    pthread_mutex_lock(&lock);
+    for (unsigned long i = 0; i < rn && (size_t)got < local->len; i++) {
+        size_t n = remote[i].len;
+        if (n > local->len - (size_t)got) n = local->len - (size_t)got;
+        if (n > 4096) n = 4096; // (a pipe holds this much)
+        const ssize_t w = write(pfd[1], remote[i].base, n);
+        if (w != (ssize_t)n) { // (a part written: taken out again)
+            char junk[4096];
+            if (w > 0) (void)!read(pfd[0], junk, (size_t)w);
+            errno = EFAULT;
+            break;
+        }
+        if (read(pfd[0], (char *)local->base + got, n) != (ssize_t)n) { errno = EFAULT; break; }
+        got += (long)n;
+    }
+    pthread_mutex_unlock(&lock);
+    return got ? got : -1;
 }
 
 // ---- memory, limits, the machine -----------------------------------------------------------
@@ -618,6 +648,26 @@ static ssize_t x_write_chk(int fd, const void *b, size_t n, size_t bn) {
     ssize_t (*w)(int, const void *, size_t) = ours("write");
     return w ? w(fd, b, n) : -1;
 }
+// getrandom(buf, len, flags): random bytes, all of them (the Infinity Blade III port called it and
+// got the stub's 0 - "no bytes"). Not for keys: a splitmix64 stream, seeded from the TSC and the clock.
+static ssize_t x_getrandom(void *buf, size_t len, unsigned flags) {
+    (void)flags;
+    static uint64_t state;
+    if (!state) {
+        struct timespec t;
+        clock_gettime(CLOCK_REALTIME, &t);
+        state = __builtin_ia32_rdtsc() ^ ((uint64_t)t.tv_sec << 32) ^ (uint64_t)t.tv_nsec;
+    }
+    uint8_t *p = buf;
+    for (size_t i = 0; i < len; i += 8) {
+        uint64_t z = (state += 0x9E3779B97F4A7C15ull);
+        z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+        z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+        z ^= z >> 31;
+        memcpy(p + i, &z, len - i < 8 ? len - i : 8);
+    }
+    return (ssize_t)len;
+}
 static ssize_t x_pwrite_chk(int fd, const void *b, size_t n, int64_t off, size_t bn) {
     (void)bn;
     ssize_t (*w)(int, const void *, size_t, int64_t) = ours("pwrite");
@@ -862,7 +912,7 @@ static const struct { const char *name; void *fn; } table[] = {
     X("recvmmsg", x_fail_nosys), X("sendmmsg", x_fail_nosys), X("strptime", x_strptime),
     X("tcgetattr", x_fail_notty), X("tcsetattr", x_fail_notty), X("tcflush", x_fail_notty),
     X("__strlcpy_chk", x_strlcpy_chk), X("__strlcat_chk", x_strlcat_chk), X("strlcat", x_strlcat),
-    X("__write_chk", x_write_chk), X("__pwrite64_chk", x_pwrite_chk), X("__fread_chk", x_fread_chk),
+    X("__write_chk", x_write_chk), X("__pwrite64_chk", x_pwrite_chk), X("__pwrite_chk", x_pwrite_chk), X("getrandom", x_getrandom), X("__fread_chk", x_fread_chk),
     X("__fwrite_chk", x_fwrite_chk), X("__fgets_chk", x_fgets_chk), X("__sendto_chk", x_sendto_chk),
     X("fgetpos", x_fgetpos), X("fsetpos", x_fsetpos),
     X("AChoreographer_getInstance", x_null), X("AChoreographer_postFrameCallback", x_post_frame),

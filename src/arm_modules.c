@@ -225,6 +225,9 @@ so_module *arm_module_load(const char *name) {
     // (an Unreal game: every library but libUE4 binds its own new / delete to the stubs)
     int is_ue = !strcmp(base, "libUE4.so") || !strcmp(base, "libUnreal.so");
     so_arm_interpose = (droid_quirks & QUIRK_UNREAL) && !is_ue ? ue_interpose : NULL;
+    void *ib_interpose(const char *name); // ib_native.cpp: the Infinity Blade ports' texture code, native
+    int ib_native_game(void);
+    if (!so_arm_interpose && ib_native_game()) so_arm_interpose = ib_interpose;
     int rc = so_load(path, &am->m);
     so_arm_interpose = NULL;
     so_arm_import_resolver = prev;

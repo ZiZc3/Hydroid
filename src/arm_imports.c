@@ -199,6 +199,132 @@ static int arm_sscanf(const char *str, const char *fmt) {
     return vsscanf(str, fmt, v);
 }
 
+// swprintf(buf, n, fmt, ...) with Android's 32-bit wchar_t (wide32.c, WIDE32_GAMES): the wide
+// format walked here, each conversion made by the narrow snprintf (%ls / %S: a wide string, %lc /
+// %C: a wide character, %s: a narrow one, as C has it), the result back as UTF-32 into buf (n
+// characters with its 0; -1 when it doesn't fit, as C's). Its arguments the ARM way: x3-x7,
+// v0-v7, then the caller's stack (as arm_sscanf reads them).
+static int w32_put_utf8(uint32_t c, char *out) {
+    if (c < 0x80) { out[0] = (char)c; return 1; }
+    if (c < 0x800) { out[0] = (char)(0xC0 | c >> 6); out[1] = (char)(0x80 | (c & 0x3F)); return 2; }
+    if (c < 0x10000) {
+        out[0] = (char)(0xE0 | c >> 12); out[1] = (char)(0x80 | ((c >> 6) & 0x3F)); out[2] = (char)(0x80 | (c & 0x3F));
+        return 3;
+    }
+    out[0] = (char)(0xF0 | c >> 18); out[1] = (char)(0x80 | ((c >> 12) & 0x3F));
+    out[2] = (char)(0x80 | ((c >> 6) & 0x3F)); out[3] = (char)(0x80 | (c & 0x3F));
+    return 4;
+}
+static int arm_swprintf(uint32_t *buf, size_t n, const uint32_t *fmt) {
+    uint64_t sp = 0, top = 0, regs[5], vr[16];
+    for (int i = 0; i < 5; i++) regs[i] = arm_guest_reg(3 + i);
+    uint64_t arm_guest_vreg(int i); // arm_cpu.cpp: v0-v7's low 64 bits
+    for (int i = 0; i < 8; i++) vr[2 * i] = arm_guest_vreg(i), vr[2 * i + 1] = 0;
+    if (!arm_guest_sp_range(&sp, &top)) return -1;
+    arm_va a = { .stack = sp, .gr_top = (uint64_t)(uintptr_t)(regs + 5), .vr_top = (uint64_t)(uintptr_t)(vr + 16),
+                 .gr_offs = -40, .vr_offs = -128 };
+    static char out[16384];
+    size_t o = 0;
+    char piece[1024];
+#define W_ADD(text, len)                                                                              \
+    do {                                                                                              \
+        size_t l_ = (len);                                                                            \
+        if (o + l_ >= sizeof(out)) l_ = sizeof(out) - 1 - o;                                          \
+        memcpy(out + o, (text), l_);                                                                  \
+        o += l_;                                                                                      \
+    } while (0)
+    for (const uint32_t *p = fmt; *p; p++) {
+        if (*p != '%') {
+            char u[4];
+            W_ADD(u, (size_t)w32_put_utf8(*p, u));
+            continue;
+        }
+        if (p[1] == '%') { W_ADD("%", 1); p++; continue; }
+        // the narrow spec: flags, width, precision (a '*' takes its number now), length, conversion
+        char spec[64] = "%";
+        size_t s = 1;
+        int precision = -1, longmod = 0;
+        p++;
+        while (*p && strchr("-+ #0'", (int)*p) && s < 40) spec[s++] = (char)*p++;
+        if (*p == '*') { s += (size_t)snprintf(spec + s, sizeof(spec) - s, "%d", (int)arm_next_gp(&a)); p++; }
+        else while (*p >= '0' && *p <= '9' && s < 40) spec[s++] = (char)*p++;
+        if (*p == '.') {
+            spec[s++] = '.';
+            p++;
+            if (*p == '*') { precision = (int)arm_next_gp(&a); s += (size_t)snprintf(spec + s, sizeof(spec) - s, "%d", precision); p++; }
+            else { precision = 0; while (*p >= '0' && *p <= '9' && s < 50) { precision = precision * 10 + (int)(*p - '0'); spec[s++] = (char)*p++; } }
+        }
+        size_t mod_at = s;
+        while (*p && strchr("hlLjztq", (int)*p) && s < 58) {
+            if (*p == 'l' || *p == 'j' || *p == 'z' || *p == 't' || *p == 'q') longmod++;
+            spec[s++] = (char)*p++;
+        }
+        if (!*p) break;
+        const char conv = (char)*p;
+        int len = 0;
+        if (strchr("diouxX", conv)) {
+            const uint64_t v = arm_next_gp(&a);
+            s = mod_at; // the length as "ll" (64 bits from the register) or none (an int)
+            if (longmod) { spec[s++] = 'l'; spec[s++] = 'l'; }
+            spec[s++] = conv, spec[s] = 0;
+            len = longmod ? snprintf(piece, sizeof(piece), spec, (long long)v) : snprintf(piece, sizeof(piece), spec, (int)v);
+        } else if (strchr("fFeEgGaA", conv)) {
+            spec[mod_at] = conv, spec[mod_at + 1] = 0;
+            len = snprintf(piece, sizeof(piece), spec, u64_to_double(arm_next_fp(&a)));
+        } else if (conv == 'p') {
+            spec[mod_at] = 'p', spec[mod_at + 1] = 0;
+            len = snprintf(piece, sizeof(piece), spec, (void *)(uintptr_t)arm_next_gp(&a));
+        } else if ((conv == 's' && longmod) || conv == 'S') { // a wide string: UTF-8 (precision in characters)
+            const uint32_t *w = (const uint32_t *)(uintptr_t)arm_next_gp(&a);
+            char text[sizeof(piece)];
+            size_t t = 0;
+            for (int k = 0; w && w[k] && (precision < 0 || k < precision) && t + 4 < sizeof(text); k++) t += (size_t)w32_put_utf8(w[k], text + t);
+            text[t] = 0;
+            char sspec[64];
+            memcpy(sspec, spec, mod_at); // width and flags kept, the precision done above
+            char *dot = memchr(sspec, '.', mod_at);
+            size_t sl = dot ? (size_t)(dot - sspec) : mod_at;
+            sspec[sl] = 's', sspec[sl + 1] = 0;
+            len = snprintf(piece, sizeof(piece), sspec, text);
+        } else if ((conv == 'c' && longmod) || conv == 'C') {
+            len = w32_put_utf8((uint32_t)arm_next_gp(&a), piece);
+        } else if (conv == 's') {
+            spec[mod_at] = 's', spec[mod_at + 1] = 0;
+            const char *str = (const char *)(uintptr_t)arm_next_gp(&a);
+            len = snprintf(piece, sizeof(piece), spec, str ? str : "(null)");
+        } else if (conv == 'c') {
+            spec[mod_at] = 'c', spec[mod_at + 1] = 0;
+            len = snprintf(piece, sizeof(piece), spec, (int)arm_next_gp(&a));
+        } else if (conv == 'n') {
+            arm_next_gp(&a); // (not written: no game asked yet)
+        } else {
+            break;
+        }
+        if (len > 0) W_ADD(piece, (size_t)len < sizeof(piece) ? (size_t)len : sizeof(piece) - 1);
+    }
+#undef W_ADD
+    out[o] = 0;
+    // back to UTF-32
+    size_t k = 0;
+    for (size_t i = 0; i < o;) {
+        unsigned c = (unsigned char)out[i];
+        uint32_t v = c;
+        int l = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+        if (l > 1) {
+            v = c & (0x7F >> l);
+            for (int j = 1; j < l && i + (size_t)j < o; j++) v = (v << 6) | ((unsigned char)out[i + (size_t)j] & 0x3F);
+        }
+        i += (size_t)l;
+        if (k + 1 >= n) { if (n) buf[n - 1] = 0; return -1; } // too long: as C's swprintf
+        buf[k++] = v;
+    }
+    if (n) buf[k] = 0;
+    static int told;
+    if (told++ < 10) droid_log("swprintf: %zu characters", k);
+    return (int)k;
+}
+void *arm_swprintf_fn(void) { return (void *)arm_swprintf; }
+
 static int arm_android_log_vprint(int prio, const char *tag, const char *fmt, const void *ap) {
     x86_va x;
     return __android_log_vprint(prio, tag, fmt, convert(&x, fmt, ap, 0));
@@ -1567,6 +1693,11 @@ void *arm_table_find(const char *name) {
 
 void *arm_import(const char *name, int is_data) {
     void *p = arm_modules_resolve_dl(name); // dlopen & co: the APK's libraries
+    if (!p) { // a 32-bit wchar_t's wide functions, for WIDE32_GAMES (wide32.c; the console's are 16-bit)
+        void *wide32_resolve(const char *name);
+        int wide32_on(void);
+        p = !strcmp(name, "swprintf") ? (wide32_on() ? (void *)arm_swprintf : NULL) : wide32_resolve(name);
+    }
     for (size_t i = 0; i < sizeof(arm_table) / sizeof(arm_table[0]) && !p; i++)
         if (strcmp(arm_table[i].name, name) == 0) p = arm_table[i].fn;
     if (!p) p = linux_abi_resolve(name);

@@ -2713,6 +2713,45 @@ static jvalue p31_instance(jobject self, const jvalue *a) {
     if (!inst) inst = (jobject)new_obj("com/prime31/EtceteraPlugin");
     return L(inst);
 }
+// The Infinity Blade III / II ports (com.ib3port.game, com.ib2port.game; MIT, iOS UE3 on Android):
+// their GameActivity's Java, as their native code calls it on the activity.
+// showAlert(id, title, message, buttons[], cancel, style, text): no dialogs here: logged, and
+// answered with its cancel button (else the first) through the game's nativeAlertResult, a moment
+// later on a thread of its own (as Android's UI thread would: the game waits for it after the call).
+// httpRequest (ClashMob's server): offline (null), the game plays without it.
+typedef struct { jint id, button; jobject text; } ib_alert;
+static void *ib_alert_answer(void *arg) {
+    ib_alert *al = arg;
+    usleep(100000);
+    typedef void (*result_fn)(void *env, jclass cls, jint id, jint button, jobject text);
+    static result_fn result;
+    if (!result) result = (result_fn)jni_find_native("nativeAlertResult");
+    if (result) result(arm_jni_env(), find_class(droid_game_in("com.ib2port.") ? "com/ib2port/game/GameActivity" : droid_game_in("com.ib1port.") ? "com/ib1port/game/GameActivity" : "com/ib3port/game/GameActivity"), al->id, al->button, al->text);
+    else droid_log("java: ib alert %d: no nativeAlertResult registered", al->id);
+    free(al);
+    return NULL;
+}
+static jvalue ib_show_alert(jobject self, const jvalue *a) {
+    (void)self;
+    ib_alert *al = malloc(sizeof(*al));
+    if (!al) return V();
+    al->id = a[0].i, al->button = a[4].i >= 0 ? a[4].i : 0, al->text = a[6].l;
+    const char *title = cstr(a[1].l), *msg = cstr(a[2].l);
+    droid_log("java: ib alert %d \"%s\": \"%.300s\" (style %d) -> button %d", al->id, title ? title : "", msg ? msg : "",
+              a[5].i, al->button);
+    pthread_t t;
+    if (pthread_create(&t, NULL, ib_alert_answer, al) == 0) pthread_detach(t);
+    else free(al);
+    return V();
+}
+static jvalue ib_http(jobject self, const jvalue *a) {
+    (void)self;
+    const char *method = cstr(a[0].l), *url = cstr(a[1].l);
+    static int told;
+    if (told++ < 10) droid_log("java: ib httpRequest %s %s: offline", method ? method : "?", url ? url : "?");
+    return L(NULL);
+}
+
 static jvalue p31_show_alert(jobject self, const jvalue *a) { // (title, message, positive, negative)
     (void)self;
     const char *pos = cstr(a[2].l);
@@ -5106,6 +5145,16 @@ static const jmeth methods[] = {
     { "com/sega/gamelib/identifiers/DashServerIdentifier", "SetDashServerIdentifier", "(Ljava/lang/String;Ljava/lang/String;)Z", dash_id_set },
     { "com/rovio/beacon/billing/GooglePlayBillingProvider", "initialize", "([Ljava/lang/String;[Ljava/lang/String;)V",
       rovio_billing_init },
+#define IB_ALERT_SIG "(ILjava/lang/String;Ljava/lang/String;[Ljava/lang/String;IILjava/lang/String;)V"
+#define IB_HTTP_SIG "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[BI)[B"
+    { "android/app/NativeActivity", "showAlert", IB_ALERT_SIG, ib_show_alert },
+    { "com/ib3port/game/GameActivity", "showAlert", IB_ALERT_SIG, ib_show_alert },
+    { "com/ib2port/game/GameActivity", "showAlert", IB_ALERT_SIG, ib_show_alert },
+    { "com/ib1port/game/GameActivity", "showAlert", IB_ALERT_SIG, ib_show_alert },
+    { "android/app/NativeActivity", "httpRequest", IB_HTTP_SIG, ib_http },
+    { "com/ib3port/game/GameActivity", "httpRequest", IB_HTTP_SIG, ib_http },
+    { "com/ib2port/game/GameActivity", "httpRequest", IB_HTTP_SIG, ib_http },
+    { "com/ib1port/game/GameActivity", "httpRequest", IB_HTTP_SIG, ib_http },
 #define P31 "com/prime31/EtceteraPlugin"
     { P31, "instance", "()L" P31 ";", p31_instance },
     { P31, "instance", "()Ljava/lang/Object;", p31_instance },

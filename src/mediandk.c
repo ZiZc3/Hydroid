@@ -30,7 +30,12 @@
 void droid_log(const char *fmt, ...);
 void *arm_callback(uint64_t guest);
 
-static int video_real(void) { return video_game(); } // VIDEO_GAMES, video_tex.h
+// Real decoding: VIDEO_GAMES (video_tex.h: decoded into a SurfaceTexture, its GL hooks too), and the
+// games that take the decoded pictures and sound from the codec's own buffers (no GL hooks): the
+// Infinity Blade ports' startup movies (Startup.m4v, StartupLoop.m4v: AVC + AAC) - they "ended at
+// once", the screen stayed black for the load they cover on a phone, the loop restarted endlessly
+#define DECODE_GAMES "com.ib3port.,com.ib2port.,com.ib1port."
+static int video_real(void) { return video_game() || droid_game_in(DECODE_GAMES); }
 
 #define AMEDIA_OK 0
 #define AMEDIA_ERROR_UNKNOWN (-10000)
