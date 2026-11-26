@@ -8,11 +8,6 @@
   <b>Android games on PS5.</b><br>
 </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/platform-PS5-2ea043" alt="platform">
-  <img src="https://img.shields.io/badge/license-GPL--3.0-2ea043" alt="license">
-</p>
-
 ---
 
 ## About
